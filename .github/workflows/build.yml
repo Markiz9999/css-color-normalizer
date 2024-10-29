@@ -22,7 +22,13 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: Build
+    - name: Build Tool
+      run: |
+        cd ./packages/css-color-parser
+        yarn install
+        yarn build
+
+    - name: Build Client
       run: |
         cd ./packages/css-color-parser-client
         yarn install
