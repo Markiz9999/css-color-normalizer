@@ -24,5 +24,6 @@ jobs:
 
     - name: Build
       run: |
+        cd ./packages/css-color-parser-client
         yarn install
         yarn build
