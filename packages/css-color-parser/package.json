@@ -1,0 +1,26 @@
+{
+  "name": "css-color-parser",
+  "version": "1.0.0",
+  "author": "maxmozgovoj13696@gmail.com",
+  "type": "commonjs",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc --p tsconfig.build.json",
+    "css-color-parser": "ts-node ./cli/index.ts",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.6.3"
+  }
+}

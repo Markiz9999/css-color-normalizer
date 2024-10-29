@@ -1,0 +1,44 @@
+{
+  "editor.tabSize": 2,
+  "editor.rulers": [140],
+  "editor.formatOnSave": false,
+  "files.insertFinalNewline": true,
+  "files.refactoring.autoSave": false,
+  "files.eol": "auto",
+  "stylelint.validate": ["css", "scss", "vue"],
+  "eslint.validate": [
+    "javascript",
+    "typescript",
+  ],
+  "[javascript]": {
+    "editor.codeActionsOnSave": [
+      "source.organizeImports",
+      "source.fixAll.eslint"
+    ]
+  },
+  "[typescript]": {
+    "editor.codeActionsOnSave": [
+      "source.organizeImports",
+      "source.fixAll.eslint"
+    ]
+  },
+  "[vue]": {
+    "editor.codeActionsOnSave": [
+      "source.fixAll.eslint"
+    ]
+  },
+  "[css]": {
+    "editor.codeActionsOnSave": [
+      "source.fixAll.stylelint"
+    ]
+  },
+  "[scss]": {
+    "editor.codeActionsOnSave": [
+      "source.fixAll.stylelint"
+    ]
+  },
+  "javascript.preferences.quoteStyle": "single",
+  "typescript.preferences.quoteStyle": "single",
+  "typescript.tsdk": "node_modules\\typescript\\lib",
+  "typescript.preferences.importModuleSpecifier": "relative", 
+}

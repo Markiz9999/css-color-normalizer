@@ -1,0 +1,17 @@
+{
+  "name": "css-color-parser-cli",
+  "version": "1.0.0",
+  "author": "maxmozgovoj13696@gmail.com",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "css-color-parser": "ts-node ./index.ts"
+  },
+  "dependencies": {
+    "css-color-parser": "../css-color-parser"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  }
+}

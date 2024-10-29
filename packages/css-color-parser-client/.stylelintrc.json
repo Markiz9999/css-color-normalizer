@@ -1,0 +1,33 @@
+{
+  "extends": [
+    "stylelint-config-standard-scss",
+    "stylelint-config-standard",
+    "stylelint-config-recommended-vue/scss",
+    "stylelint-config-recommended-vue",
+    "stylelint-config-idiomatic-order"
+  ],
+  "plugins": ["stylelint-prettier", "stylelint-order"],
+  "rules": {
+    "prettier/prettier": [
+      true,
+      {
+        "semi": true,
+        "singleQuote": true,
+        "trailingComma": "all",
+        "printWidth": 140,
+        "endOfLine": "auto"
+      }
+    ],
+    "no-empty-source": null,
+    "rule-empty-line-before": ["always", { "except": ["first-nested"], "ignore": ["after-comment"] }],
+    "at-rule-no-unknown": null,
+    "selector-id-pattern": null,
+    "selector-class-pattern": null,
+    "color-function-notation": "legacy",
+    "alpha-value-notation": "number",
+    "scss/at-rule-no-unknown": true,
+    "scss/no-global-function-names": null,
+    "import-notation": "string",
+    "no-invalid-position-at-import-rule": null
+  }
+}
