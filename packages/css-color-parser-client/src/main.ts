@@ -25,10 +25,17 @@ const MyPreset = definePreset(Aura, {
   },
 });
 
-export const createApp = ViteSSG(App, { routes }, ({ app }) => {
-  app.use(PrimeVue, {
-    theme: {
-      preset: MyPreset,
-    },
-  });
-});
+export const createApp = ViteSSG(
+  App,
+  {
+    routes: routes,
+    base: import.meta.env.PUBLIC_PREFIX ?? '/',
+  },
+  ({ app }) => {
+    app.use(PrimeVue, {
+      theme: {
+        preset: MyPreset,
+      },
+    });
+  },
+);

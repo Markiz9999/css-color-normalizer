@@ -12,7 +12,7 @@ defineProps<{ invalid?: boolean }>();
 <template>
   <FloatLabel class="color-input" variant="on">
     <IconField>
-      <InputIcon><img src="@/assets/palette.png" class="icon" /></InputIcon>
+      <InputIcon><img src="@/assets/palette-small.png" class="icon" /></InputIcon>
       <InputText v-model="model" id="color-input" variant="filled" size="large" :invalid="invalid" />
     </IconField>
     <label for="color-input">Type your CSS color here</label>
