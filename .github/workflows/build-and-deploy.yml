@@ -3,8 +3,15 @@ name: Build and Deploy Client
 on:
   push:
     branches: [ "master" ]
+    paths:
+      - 'packages/css-color-parser/**'
+      - 'packages/css-color-parser-client/**'
   pull_request:
     branches: [ "master" ]
+    paths:
+      - 'packages/css-color-parser/**'
+      - 'packages/css-color-parser-client/**'
+  workflow_dispatch:
 
 jobs:
   build:
