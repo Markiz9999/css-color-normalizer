@@ -1,4 +1,4 @@
-name: Build Client
+name: Build and Deploy Client
 
 on:
   push:
@@ -29,6 +29,8 @@ jobs:
         yarn build
 
     - name: Build Client
+      env:
+        PUBLIC_PREFIX: '/css-color-parser/'
       run: |
         cd ./packages/css-color-parser-client
         yarn install
