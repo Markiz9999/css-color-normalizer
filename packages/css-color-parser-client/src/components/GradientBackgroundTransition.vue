@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, ref, watch } from 'vue';
 import GradientBackground from './GradientBackground.vue';
 
 const {
@@ -6,17 +7,28 @@ const {
   colorMiddle = 'green',
   colorTo = 'blue',
 } = defineProps<{ colorFrom?: string; colorMiddle?: string; colorTo?: string }>();
+
+const updatedAt = ref<string>(new Date().toString());
+
+const key = computed(() => `${colorFrom}-${colorMiddle}-${colorTo}-${updatedAt.value}`);
+
+watch(
+  () => ({
+    colorFrom,
+    colorMiddle,
+    colorTo,
+  }),
+  () => {
+    updatedAt.value = new Date().toString();
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
   <div class="gradient-background-transition">
     <transition name="fade">
-      <GradientBackground
-        :key="`${colorFrom}-${colorMiddle}-${colorTo}`"
-        :colorFrom="colorFrom"
-        :colorMiddle="colorMiddle"
-        :colorTo="colorTo"
-      />
+      <GradientBackground :key="key" :colorFrom="colorFrom" :colorMiddle="colorMiddle" :colorTo="colorTo" />
     </transition>
   </div>
 </template>
