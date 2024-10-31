@@ -15,6 +15,10 @@ const color = ref<IColor | null>(null);
 const isColorFilledIn = ref(false);
 const mode = ref<ColorParseMode>(ColorParseMode.Light);
 
+const gradientFromColorHex = ref<string | null>(null);
+const gradientMiddleColorHex = ref<string | null>(null);
+const gradientToColorHex = ref<string | null>(null);
+
 const parser = new CssColorParser();
 
 const hexColor = computed(() => {
@@ -33,70 +37,48 @@ const isCssColorInvalid = computed(() => {
   return color.value == null && isColorFilledIn.value === true;
 });
 
-const gradientMiddleColor = computed(() =>
-  color.value != null
-    ? new Color(
-        255,
-        Math.max(60, Math.min(195, color.value.R)),
-        Math.max(60, Math.min(195, color.value.G)),
-        Math.max(60, Math.min(195, color.value.B)),
-      )
-    : undefined,
-);
-
-const gradientFromColorHex = computed(() =>
-  gradientMiddleColor.value != null
-    ? new Color(
-        255,
-        gradientMiddleColor.value.R - 60,
-        gradientMiddleColor.value.G - 60,
-        gradientMiddleColor.value.B - 60,
-      ).toHexColorString()
-    : undefined,
-);
-// const decreaseFactor = 0.8;
-// const gradientFromColorHex = computed(() =>
-//   color.value != null
-//     ? new Color(
-//         255,
-//         Math.max(0, Math.min(255, Math.round(color.value.R * decreaseFactor))),
-//         Math.max(0, Math.min(255, Math.round(color.value.G * decreaseFactor))),
-//         Math.max(0, Math.min(255, Math.round(color.value.B * decreaseFactor))),
-//       ).toHexColorString()
-//     : undefined,
-// );
-
-// const gradientMiddleColorHex = computed(() => color.value?.toHexColorString());
-const gradientMiddleColorHex = computed(() => gradientMiddleColor.value?.toHexColorString());
-
-const gradientToColorHex = computed(() =>
-  gradientMiddleColor.value != null
-    ? new Color(
-        255,
-        gradientMiddleColor.value.R + 60,
-        gradientMiddleColor.value.G + 60,
-        gradientMiddleColor.value.B + 60,
-      ).toHexColorString()
-    : undefined,
-);
-// const increaseFactor = 1.2;
-// const gradientToColorHex = computed(() =>
-//   color.value != null
-//     ? new Color(
-//         255,
-//         Math.max(0, Math.min(255, Math.round(color.value.R * increaseFactor))),
-//         Math.max(0, Math.min(255, Math.round(color.value.G * increaseFactor))),
-//         Math.max(0, Math.min(255, Math.round(color.value.B * increaseFactor))),
-//       ).toHexColorString()
-//     : undefined,
-// );
-
-watch(cssColor, () => {
+watch([cssColor, mode], () => {
   parse();
 });
 
-watch(mode, () => {
-  parse();
+watch(color, () => {
+  if (color.value == null) {
+    gradientFromColorHex.value = null;
+    gradientMiddleColorHex.value = null;
+    gradientToColorHex.value = null;
+
+    return;
+  }
+
+  const rDecreaseCount = Math.round(Math.random() * 40 + 40);
+  const gDecreaseCount = Math.round(Math.random() * 40 + 40);
+  const bDecreaseCount = Math.round(Math.random() * 40 + 40);
+  const rIncreaseCount = Math.round(Math.random() * 40 + 40);
+  const gIncreaseCount = Math.round(Math.random() * 40 + 40);
+  const bIncreaseCount = Math.round(Math.random() * 40 + 40);
+
+  const middleColor = new Color(
+    255,
+    Math.max(rDecreaseCount, Math.min(255 - rIncreaseCount, color.value.R)),
+    Math.max(gDecreaseCount, Math.min(255 - gIncreaseCount, color.value.G)),
+    Math.max(bDecreaseCount, Math.min(255 - bIncreaseCount, color.value.B)),
+  );
+
+  gradientFromColorHex.value = new Color(
+    255,
+    middleColor.R - rDecreaseCount,
+    middleColor.G - gDecreaseCount,
+    middleColor.B - bDecreaseCount,
+  ).toHexColorString();
+
+  gradientMiddleColorHex.value = middleColor.toHexColorString();
+
+  gradientToColorHex.value = new Color(
+    255,
+    middleColor.R + rIncreaseCount,
+    middleColor.G + gIncreaseCount,
+    middleColor.B + bIncreaseCount,
+  ).toHexColorString();
 });
 
 const parse = debounce(() => {
@@ -112,7 +94,11 @@ const parse = debounce(() => {
 
 <template>
   <main class="home-view" :class="mode">
-    <GradientBackgroundTransition :colorFrom="gradientFromColorHex" :colorMiddle="gradientMiddleColorHex" :colorTo="gradientToColorHex" />
+    <GradientBackgroundTransition
+      :colorFrom="gradientFromColorHex ?? undefined"
+      :colorMiddle="gradientMiddleColorHex ?? undefined"
+      :colorTo="gradientToColorHex ?? undefined"
+    />
     <section>
       <div class="card main">
         <h1>
