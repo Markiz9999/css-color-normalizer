@@ -29,39 +29,50 @@ export class Color implements IColor {
     this.validate('G', G);
     this.validate('B', B);
 
-    this._A = A;
-    this._R = R;
-    this._G = G;
-    this._B = B;
+    this._A = Math.max(0, Math.min(1, A));
+    this._R = Math.max(0, Math.min(1, R));
+    this._G = Math.max(0, Math.min(1, G));
+    this._B = Math.max(0, Math.min(1, B));
   }
 
   public toHexNumberString(): string {
-    return ['0x', ...[this.A, this.R, this.G, this.B].map((value) => value.toString(16).padStart(2, '0').toUpperCase())].join('');
+    return [
+      '0x',
+      ...[this.to255Range(this.A), this.to255Range(this.R), this.to255Range(this.G), this.to255Range(this.B)].map((value) =>
+        value.toString(16).padStart(2, '0').toUpperCase(),
+      ),
+    ].join('');
   }
 
   public toHexColorString(): string {
-    return ['#', ...[this.R, this.G, this.B, this.A].map((value) => value.toString(16).padStart(2, '0').toUpperCase())].join('');
+    return [
+      '#',
+      ...[this.to255Range(this.R), this.to255Range(this.G), this.to255Range(this.B), this.to255Range(this.A)].map((value) =>
+        value.toString(16).padStart(2, '0').toUpperCase(),
+      ),
+    ].join('');
   }
 
   public toRgbColorString(): string {
-    return `rgb(${this.R} ${this.G} ${this.B} / ${round(this.A / 255, 3)})`;
+    return `rgb(${this.R} ${this.G} ${this.B} / ${this.A})`;
   }
 
   public toNumber(): number {
-    return this.A * 2 ** (6 * 4) + this.R * 2 ** (4 * 4) + this.G * 2 ** (2 * 4) + this.B;
+    return (
+      this.to255Range(this.A) * 2 ** (6 * 4) +
+      this.to255Range(this.R) * 2 ** (4 * 4) +
+      this.to255Range(this.G) * 2 ** (2 * 4) +
+      this.to255Range(this.B)
+    );
   }
 
   protected validate(channel: string, value: number): void {
-    if (value < 0) {
-      throw new Error(`Invalid ${channel} channel value. Negative value is not supported`);
+    if (Number.isNaN(value) === true) {
+      throw new Error(`Invalid ${channel} channel value. Channel value must be not NaN`);
     }
+  }
 
-    if (value > 255) {
-      throw new Error(`Invalid ${channel} channel value. Maximum channel value is 255`);
-    }
-
-    if (Number.isInteger(value) === false) {
-      throw new Error(`Invalid ${channel} channel value. Channel value must be integer`);
-    }
+  protected to255Range(value: number): number {
+    return Math.round(round(value, 5) * 255);
   }
 }

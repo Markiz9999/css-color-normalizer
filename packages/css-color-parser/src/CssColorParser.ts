@@ -2,6 +2,7 @@ import { IColor } from './interfaces/IColor';
 import { IColorParser } from './interfaces/IColorParser';
 import { ILightDarkColorParseOptions } from './interfaces/ILightDarkColorParseOptions';
 import { ColorFuncColorParser } from './parsers/ColorFuncColorParser';
+import { ColorMixFuncColorParser } from './parsers/ColorMixFuncColorParser';
 import { ConstantColorParser } from './parsers/ConstantColorParser';
 import { HexColorParser } from './parsers/HexColorParser';
 import { HslColorParser } from './parsers/HslColorParser';
@@ -29,15 +30,8 @@ export class CssColorParser implements IColorParser<IColorParseOptions> {
       (options) => [new LightDarkColorParser(this), { mode: options?.mode }],
       () => new OklabColorParser(),
       () => new ColorFuncColorParser(),
+      () => new ColorMixFuncColorParser(this),
     ];
-  }
-
-  public isColorSupported(cssColor: string): boolean {
-    return this.parserBuilders.some((builder) => {
-      const buildResult = builder();
-      const parser = Array.isArray(buildResult) ? buildResult[0] : buildResult;
-      return parser.isColorSupported(cssColor);
-    });
   }
 
   public parse(cssColor: string, options?: IColorParseOptions): IColor {
@@ -45,15 +39,19 @@ export class CssColorParser implements IColorParser<IColorParseOptions> {
 
     for (const builder of this.parserBuilders) {
       const buildResult = builder(options);
-      const parser = Array.isArray(buildResult) ? buildResult[0] : buildResult;
-      const parserOptions = Array.isArray(buildResult) ? buildResult[1] : undefined;
 
-      const isColorSupported = parser.isColorSupported(cssColor);
-      if (isColorSupported === false) {
-        continue;
+      const [parser, parserOptions] = Array.isArray(buildResult) ? buildResult : [buildResult];
+
+      let color: IColor | undefined;
+      try {
+        color = parser.parse(cssColor, parserOptions);
+      } catch {
+        // empty catch
       }
 
-      return parser.parse(cssColor, parserOptions);
+      if (color != null) {
+        return color;
+      }
     }
 
     throw new Error('Invalid or not supported CSS color');

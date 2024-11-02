@@ -13,18 +13,10 @@ export class OklabColorParser implements IColorParser {
     this.colorConversionUtils = new ColorConversionUtils();
   }
 
-  public isColorSupported(cssColor: string): boolean {
+  public parse(cssColor: string): IColor {
     cssColor = cssColor.toLowerCase();
 
     if (!(cssColor.startsWith('oklab(') && cssColor.endsWith(')'))) {
-      return false;
-    }
-
-    return true;
-  }
-
-  public parse(cssColor: string): IColor {
-    if (!this.isColorSupported(cssColor)) {
       throw new Error('Invalid css color');
     }
 
@@ -45,7 +37,7 @@ export class OklabColorParser implements IColorParser {
     const { R, G, B } = this.convertToRgb(args);
     const A = alpha != null ? this.parseAlphaChannelValue(alpha) : undefined;
 
-    return new Color(A ?? 255, R, G, B);
+    return new Color(A ?? 1, R, G, B);
   }
 
   protected convertToRgb(args: string[]): { R: number; G: number; B: number } {
@@ -55,19 +47,23 @@ export class OklabColorParser implements IColorParser {
     const aAxis = this.parseAxisValue(args[1]);
     const bAxis = this.parseAxisValue(args[2]);
 
-    const { R: lR, G: lG, B: lB } = this.colorConversionUtils.oklabToLinearRgb(lightness, aAxis, bAxis);
+    // const { R: lR, G: lG, B: lB } = this.colorConversionUtils.oklabToLinearRgb(lightness, aAxis, bAxis);
+    // const { R, G, B } = this.colorConversionUtils.linearRgbToRgb(lR, lG, lB);
+
+    const { X, Y, Z } = this.colorConversionUtils.oklabToXyz(lightness, aAxis, bAxis);
+    const { R: lR, G: lG, B: lB } = this.colorConversionUtils.xyzToLinearRgb(X, Y, Z);
     const { R, G, B } = this.colorConversionUtils.linearRgbToRgb(lR, lG, lB);
 
     return {
-      R: Math.ceil(Math.max(0, Math.min(255, R * 255))),
-      G: Math.ceil(Math.max(0, Math.min(255, G * 255))),
-      B: Math.ceil(Math.max(0, Math.min(255, B * 255))),
+      R: Math.max(0, Math.min(1, R)),
+      G: Math.max(0, Math.min(1, G)),
+      B: Math.max(0, Math.min(1, B)),
     };
   }
 
   protected parseLightnessValue(value: string): number {
     if (value === 'none') {
-      value = '0';
+      value = '0%';
     }
 
     let valueNumber: number;
@@ -84,7 +80,7 @@ export class OklabColorParser implements IColorParser {
 
   protected parseAxisValue(value: string): number {
     if (value === 'none') {
-      value = '0';
+      value = '0%';
     }
 
     let valueNumber: number;
@@ -101,18 +97,18 @@ export class OklabColorParser implements IColorParser {
 
   protected parseAlphaChannelValue(value: string): number {
     if (value === 'none') {
-      value = '0';
+      value = '0%';
     }
 
     let valueNumber: number;
 
     if (value.endsWith('%')) {
       const cssValue = this.unitParser.parsePercentage(value);
-      valueNumber = (cssValue.value / 100) * 255;
+      valueNumber = cssValue.value / 100;
     } else {
-      valueNumber = this.unitParser.parseDecimal(value) * 255;
+      valueNumber = this.unitParser.parseDecimal(value);
     }
 
-    return Math.ceil(Math.max(0, Math.min(255, valueNumber)));
+    return Math.max(0, Math.min(1, valueNumber));
   }
 }

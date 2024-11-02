@@ -41,7 +41,49 @@ export class ColorConversionUtils {
 
     const m = L - C / 2;
 
-    return { R: Math.round((R1 + m) * 255), G: Math.round((G1 + m) * 255), B: Math.round((B1 + m) * 255) };
+    return { R: R1 + m, G: G1 + m, B: B1 + m };
+  }
+
+  public rgbToHsl(R: number, G: number, B: number): { H: number; S: number; L: number } {
+    const max = Math.max(R, G, B);
+    const min = Math.min(R, G, B);
+
+    let H = NaN;
+    let S = 0;
+    const L = (min + max) / 2;
+
+    const d = max - min;
+
+    if (d !== 0) {
+      S = L === 0 || L === 1 ? 0 : (max - L) / Math.min(L, 1 - L);
+
+      switch (max) {
+        case R:
+          H = (G - B) / d + (G < B ? 6 : 0);
+          break;
+        case G:
+          H = (B - R) / d + 2;
+          break;
+        case B:
+          H = (R - G) / d + 4;
+      }
+
+      H = H * 60;
+    }
+
+    // Very out of gamut colors can produce negative saturation
+    // If so, just rotate the hue by 180 and use a positive saturation
+    // see https://github.com/w3c/csswg-drafts/issues/9222
+    if (S < 0) {
+      H += 180;
+      S = Math.abs(S);
+    }
+
+    if (H >= 360) {
+      H -= 360;
+    }
+
+    return { H, S, L };
   }
 
   public hsvToRgb(H: number, S: number, V: number): { R: number; G: number; B: number } {
@@ -82,7 +124,7 @@ export class ColorConversionUtils {
 
     const m = V - C;
 
-    return { R: Math.round((R1 + m) * 255), G: Math.round((G1 + m) * 255), B: Math.round((B1 + m) * 255) };
+    return { R: R1 + m, G: G1 + m, B: B1 + m };
   }
 
   public hwbToHsv(H: number, W: number, B: number): { H: number; S: number; V: number } {
@@ -90,6 +132,109 @@ export class ColorConversionUtils {
       H,
       S: 1 - W / (1 - B),
       V: 1 - B,
+    };
+  }
+
+  public rgbToHue(R: number, G: number, B: number): number {
+    // Similar to rgbToHsl, except that saturation and lightness are not calculated, and
+    // potential negative saturation is ignored.
+    const max = Math.max(R, G, B);
+    const min = Math.min(R, G, B);
+    let hue = NaN;
+    const d = max - min;
+
+    if (d !== 0) {
+      switch (max) {
+        case R:
+          hue = (G - B) / d + (G < B ? 6 : 0);
+          break;
+        case G:
+          hue = (B - R) / d + 2;
+          break;
+        case B:
+          hue = (R - G) / d + 4;
+      }
+
+      hue *= 60;
+    }
+
+    if (hue >= 360) {
+      hue -= 360;
+    }
+
+    return hue;
+  }
+
+  public rgbToHwb(R: number, G: number, B: number): { H: number; W: number; B: number } {
+    const hue = this.rgbToHue(R, G, B);
+    const white = Math.min(R, G, B);
+    const black = 1 - Math.max(R, G, B);
+    return { H: hue, W: white, B: black };
+  }
+
+  public d50XyzToLab(X: number, Y: number, Z: number): { L: number; a: number; b: number } {
+    // Assuming XYZ is relative to D65, convert to CIE Lab
+    // from CIE standard, which now defines these as a rational fraction
+
+    const D50 = [0.3457 / 0.3585, 1.0, (1.0 - 0.3457 - 0.3585) / 0.3585];
+    // const D65 = [0.3127 / 0.329, 1.0, (1.0 - 0.3127 - 0.329) / 0.329];
+
+    const ε = 216 / 24389; // 6^3 / 29^3
+    const κ = 24389 / 27; // 29^3 / 3^3
+
+    // compute xyz, which is XYZ scaled relative to reference white
+    const X1 = X / D50[0];
+    const Y1 = Y / D50[1];
+    const Z1 = Z / D50[2];
+
+    // now compute f
+    const f1 = X1 > ε ? Math.cbrt(X1) : (κ * X1 + 16) / 116;
+    const f2 = Y1 > ε ? Math.cbrt(Y1) : (κ * Y1 + 16) / 116;
+    const f3 = Z1 > ε ? Math.cbrt(Z1) : (κ * Z1 + 16) / 116;
+
+    return { L: 116 * f2 - 16, a: 500 * (f1 - f2), b: 200 * (f2 - f3) };
+  }
+
+  public labToD50Xyz(L: number, a: number, b: number): { X: number; Y: number; Z: number } {
+    // Convert Lab to D65-adapted XYZ
+    // http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
+
+    const D50 = [0.3457 / 0.3585, 1.0, (1.0 - 0.3457 - 0.3585) / 0.3585];
+    // const D65 = [0.3127 / 0.329, 1.0, (1.0 - 0.3127 - 0.329) / 0.329];
+
+    const κ = 24389 / 27; // 29^3 / 3^3
+    const ε = 216 / 24389; // 6^3 / 29^3
+
+    // compute f, starting with the luminance-related term
+    const f2 = (L + 16) / 116;
+    const f1 = a / 500 + f2;
+    const f3 = f2 - b / 200;
+
+    // compute xyz
+    const X = Math.pow(f1, 3) > ε ? Math.pow(f1, 3) : (116 * f1 - 16) / κ;
+    const Y = L > κ * ε ? Math.pow((L + 16) / 116, 3) : L / κ;
+    const Z = Math.pow(f3, 3) > ε ? Math.pow(f3, 3) : (116 * f3 - 16) / κ;
+
+    // Compute XYZ by scaling xyz by reference white
+    return { X: X * D50[0], Y: Y * D50[1], Z: Z * D50[2] };
+  }
+
+  public labToLch(L: number, a: number, b: number): { L: number; C: number; H: number } {
+    // Convert to polar form
+    const hue = (Math.atan2(b, a) * 180) / Math.PI;
+    return {
+      L, // L is still L
+      C: Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2)), // Chroma
+      H: hue >= 0 ? hue : hue + 360, // Hue, in degrees [0 to 360)
+    };
+  }
+
+  public lchToLab(L: number, C: number, H: number): { L: number; a: number; b: number } {
+    // Convert from polar form
+    return {
+      L, // L is still L
+      a: C * Math.cos((H * Math.PI) / 180), // a
+      b: C * Math.sin((H * Math.PI) / 180), // b
     };
   }
 
@@ -112,6 +257,42 @@ export class ColorConversionUtils {
     return { R, G, B };
   }
 
+  public linearRgbToOklab(R: number, G: number, B: number): { L: number; a: number; b: number } {
+    const M2 = [
+      [0.2104542553, 0.793617785, -0.0040720468],
+      [1.9779984951, -2.428592205, 0.4505937099],
+      [0.0259040371, 0.7827717662, -0.808675766],
+    ];
+    const M3 = [
+      [0.4122214708, 0.5363325363, 0.0514459929],
+      [0.2119034982, 0.6806995451, 0.1073969566],
+      [0.0883024619, 0.2817188376, 0.6299787005],
+    ];
+
+    const [[l], [m], [s]] = multiply(M3, [[R], [G], [B]]);
+    const [l1, m1, s1] = [Math.cbrt(l), Math.cbrt(m), Math.cbrt(s)];
+    const [[L], [a], [b]] = multiply(M2, [[l1], [m1], [s1]]);
+
+    return { L, a, b };
+  }
+
+  public oklabToOklch(L: number, a: number, b: number): { L: number; C: number; H: number } {
+    const hue = (Math.atan2(b, a) * 180) / Math.PI;
+    return {
+      L, // L is still L
+      C: Math.sqrt(a ** 2 + b ** 2), // Chroma
+      H: hue >= 0 ? hue : hue + 360, // Hue, in degrees [0 to 360)
+    };
+  }
+
+  public oklchToOklab(L: number, C: number, H: number): { L: number; a: number; b: number } {
+    return {
+      L, // L is still L
+      a: C * Math.cos((H * Math.PI) / 180), // a
+      b: C * Math.sin((H * Math.PI) / 180), // b
+    };
+  }
+
   // convert XYZ to linear-light sRGB
   public xyzToLinearRgb(X: number, Y: number, Z: number): { R: number; G: number; B: number } {
     const M = [
@@ -123,6 +304,21 @@ export class ColorConversionUtils {
     const [[R], [G], [B]] = multiply(M, [[X], [Y], [Z]]);
 
     return { R, G, B };
+  }
+
+  public linearRgbToXyz(R: number, G: number, B: number): { X: number; Y: number; Z: number } {
+    // convert an array of linear-light sRGB values to CIE XYZ
+    // using sRGB's own white, D65 (no chromatic adaptation)
+
+    const M = [
+      [506752 / 1228815, 87881 / 245763, 12673 / 70218],
+      [87098 / 409605, 175762 / 245763, 12673 / 175545],
+      [7918 / 409605, 87881 / 737289, 1001167 / 1053270],
+    ];
+
+    const [[X], [Y], [Z]] = multiply(M, [[R], [G], [B]]);
+
+    return { X, Y, Z };
   }
 
   public oklabToXyz(L: number, a: number, b: number): { X: number; Y: number; Z: number } {
@@ -167,8 +363,37 @@ export class ColorConversionUtils {
     return { X, Y, Z };
   }
 
+  public xyzToLinearP3(X: number, Y: number, Z: number): { R: number; G: number; B: number } {
+    // convert XYZ to linear-light P3
+    const M = [
+      [446124 / 178915, -333277 / 357830, -72051 / 178915],
+      [-14852 / 17905, 63121 / 35810, 423 / 17905],
+      [11844 / 330415, -50337 / 660830, 316169 / 330415],
+    ];
+
+    const [[R], [G], [B]] = multiply(M, [[X], [Y], [Z]]);
+
+    return { R, G, B };
+  }
+
+  public linearA98RgbToA98Rgb(R: number, G: number, B: number): { R: number; G: number; B: number } {
+    return {
+      R: this.a98RgbGammaCorrection(R),
+      G: this.a98RgbGammaCorrection(G),
+      B: this.a98RgbGammaCorrection(B),
+    };
+  }
+
   public a98RgbToLinearA98Rgb(R: number, G: number, B: number): { R: number; G: number; B: number } {
     return { R: this.reversedA98RgbGammaCorrection(R), G: this.reversedA98RgbGammaCorrection(G), B: this.reversedA98RgbGammaCorrection(B) };
+  }
+
+  public linearRec2020ToRec2020(R: number, G: number, B: number): { R: number; G: number; B: number } {
+    return {
+      R: this.rec2020GammaCorrection(R),
+      G: this.rec2020GammaCorrection(G),
+      B: this.rec2020GammaCorrection(B),
+    };
   }
 
   public rec2020ToLinearRec2020(R: number, G: number, B: number): { R: number; G: number; B: number } {
@@ -198,6 +423,27 @@ export class ColorConversionUtils {
     return { X, Y, Z };
   }
 
+  public xyzToLinearA98Rgb(X: number, Y: number, Z: number): { R: number; G: number; B: number } {
+    // convert XYZ to linear-light a98-rgb
+    const M = [
+      [1829569 / 896150, -506331 / 896150, -308931 / 896150],
+      [-851781 / 878810, 1648619 / 878810, 36519 / 878810],
+      [16779 / 1248040, -147721 / 1248040, 1266979 / 1248040],
+    ];
+
+    const [[R], [G], [B]] = multiply(M, [[X], [Y], [Z]]);
+
+    return { R, G, B };
+  }
+
+  public linearProPhotoRgbToProPhotoRgb(R: number, G: number, B: number): { R: number; G: number; B: number } {
+    return {
+      R: this.proPhotoRgbGammaCorrection(R),
+      G: this.proPhotoRgbGammaCorrection(G),
+      B: this.proPhotoRgbGammaCorrection(B),
+    };
+  }
+
   public proPhotoRgbToLinearProPhotoRgb(R: number, G: number, B: number): { R: number; G: number; B: number } {
     return {
       R: this.reversedProPhotoRgbGammaCorrection(R),
@@ -221,13 +467,45 @@ export class ColorConversionUtils {
     return { X, Y, Z };
   }
 
-  public D50XyzToD65Xyz(fromX: number, fromY: number, fromZ: number): { X: number; Y: number; Z: number } {
+  public d50XyzToLinearProPhoto(X: number, Y: number, Z: number): { R: number; G: number; B: number } {
+    // convert D50 XYZ to linear-light prophoto-rgb
+    const M = [
+      [1.3457868816471583, -0.25557208737979464, -0.05110186497554526],
+      [-0.5446307051249019, 1.5082477428451468, 0.02052744743642139],
+      [0.0, 0.0, 1.2119675456389452],
+    ];
+
+    const [[R], [G], [B]] = multiply(M, [[X], [Y], [Z]]);
+
+    return { R, G, B };
+  }
+
+  public d50XyzToD65Xyz(fromX: number, fromY: number, fromZ: number): { X: number; Y: number; Z: number } {
     // Bradford chromatic adaptation from D50 to D65
     // See https://github.com/LeaVerou/color.js/pull/360/files
     const M = [
       [0.955473421488075, -0.02309845494876471, 0.06325924320057072],
       [-0.0283697093338637, 1.0099953980813041, 0.021041441191917323],
       [0.012314014864481998, -0.020507649298898964, 1.330365926242124],
+    ];
+
+    const [[X], [Y], [Z]] = multiply(M, [[fromX], [fromY], [fromZ]]);
+
+    return { X, Y, Z };
+  }
+
+  public d65XyzToD50Xyz(fromX: number, fromY: number, fromZ: number): { X: number; Y: number; Z: number } {
+    // Bradford chromatic adaptation from D65 to D50
+    // The matrix below is the result of three operations:
+    // - convert from XYZ to retinal cone domain
+    // - scale components from one reference white to another
+    // - convert back to XYZ
+    // see https://github.com/LeaVerou/color.js/pull/354/files
+
+    const M = [
+      [1.0479297925449969, 0.022946870601609652, -0.05019226628920524],
+      [0.02962780877005599, 0.9904344267538799, -0.017073799063418826],
+      [-0.009243040646204504, 0.015055191490298152, 0.7518742814281371],
     ];
 
     const [[X], [Y], [Z]] = multiply(M, [[fromX], [fromY], [fromZ]]);
@@ -251,6 +529,19 @@ export class ColorConversionUtils {
     return { X, Y, Z };
   }
 
+  public xyzToLinearRec2020(X: number, Y: number, Z: number): { R: number; G: number; B: number } {
+    // convert XYZ to linear-light rec2020
+    const M = [
+      [30757411 / 17917100, -6372589 / 17917100, -4539589 / 17917100],
+      [-19765991 / 29648200, 47925759 / 29648200, 467509 / 29648200],
+      [792561 / 44930125, -1921689 / 44930125, 42328811 / 44930125],
+    ];
+
+    const [[R], [G], [B]] = multiply(M, [[X], [Y], [Z]]);
+
+    return { R, G, B };
+  }
+
   protected rgbGammaCorrection(channelValue: number): number {
     const sign = channelValue < 0 ? -1 : 1;
     const abs = Math.abs(channelValue);
@@ -260,6 +551,39 @@ export class ColorConversionUtils {
     }
 
     return 12.92 * channelValue;
+  }
+
+  protected a98RgbGammaCorrection(channelValue: number): number {
+    const sign = channelValue < 0 ? -1 : 1;
+    const abs = Math.abs(channelValue);
+
+    return sign * Math.pow(abs, 256 / 563);
+  }
+
+  protected proPhotoRgbGammaCorrection(channelValue: number): number {
+    const Et = 1 / 512;
+    const sign = channelValue < 0 ? -1 : 1;
+    const abs = Math.abs(channelValue);
+
+    if (abs >= Et) {
+      return sign * Math.pow(abs, 1 / 1.8);
+    }
+
+    return 16 * channelValue;
+  }
+
+  protected rec2020GammaCorrection(channelValue: number): number {
+    const alpha = 1.09929682680944;
+    const beta = 0.018053968510807;
+
+    const sign = channelValue < 0 ? -1 : 1;
+    const abs = Math.abs(channelValue);
+
+    if (abs > beta) {
+      return sign * (alpha * Math.pow(abs, 0.45) - (alpha - 1));
+    }
+
+    return 4.5 * channelValue;
   }
 
   protected reversedRgbGammaCorrection(channelValue: number): number {

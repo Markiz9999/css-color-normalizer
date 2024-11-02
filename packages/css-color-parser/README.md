@@ -35,19 +35,6 @@ Parse the CSS color and returns [`IColor`][api-color] structure.
 
 Unified color ([`IColor`][api-color]).
 
-### `new CssColorParser().isColorSupported(cssColor)`
-
-Returns a `boolean` value representing support for the passed CSS color.
-
-###### Parameters
-
-*   `cssColor` (`string`)
-    — CSS color string
-
-###### Returns
-
-Value showing CSS color support (`boolean`).
-
 ### `IColorParseOptions`
 
 Configuration (TypeScript type).
@@ -64,13 +51,13 @@ Unified color structure (TypeScript type).
 ###### Fields
 
 *   `A` (`number`)
-    — alpha channel in range from 0 to 255
+    — alpha channel in range from 0 to 1
 *   `R` (`number`)
-    — red channel in range from 0 to 255
+    — red channel in range from 0 to 1
 *   `G` (`number`)
-    — green channel in range from 0 to 255
+    — green channel in range from 0 to 1
 *   `B` (`number`)
-    — blue channel in range from 0 to 255
+    — blue channel in range from 0 to 1
 
 ###### Methods
 

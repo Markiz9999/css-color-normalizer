@@ -47,14 +47,14 @@ describe('CSS Color Parser', () => {
       const cssColor = 'color(xyz 0.1 0.5 0.8 / 40%)';
       const color = parser.parse(cssColor);
 
-      expect(color.toHexNumberString()).toBe('0x6600F0E1');
+      expect(color.toHexNumberString()).toBe('0x6600F0E0');
     });
 
     test('for color function with XYZ D65 color', () => {
       const cssColor = 'color(xyz-d65 0.1 0.5 0.8 / 40%)';
       const color = parser.parse(cssColor);
 
-      expect(color.toHexNumberString()).toBe('0x6600F0E1');
+      expect(color.toHexNumberString()).toBe('0x6600F0E0');
     });
 
     test('for color function with XYZ D50 color', () => {

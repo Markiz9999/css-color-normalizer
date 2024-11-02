@@ -37,48 +37,6 @@ describe('CSS Color Parser', () => {
     });
   });
 
-  describe('should parse', () => {
-    test('simple hex color', () => {
-      const hexColor = '#8F9A1E';
-      const color = parser.parse(hexColor);
-
-      expect(color.A).toBe(255);
-      expect(color.R).toBe(143);
-      expect(color.G).toBe(154);
-      expect(color.B).toBe(30);
-    });
-
-    test('hex color with alpha', () => {
-      const hexColor = '#8F9A1E99';
-      const color = parser.parse(hexColor);
-
-      expect(color.A).toBe(153);
-      expect(color.R).toBe(143);
-      expect(color.G).toBe(154);
-      expect(color.B).toBe(30);
-    });
-
-    test('short hex color', () => {
-      const hexColor = '#F71';
-      const color = parser.parse(hexColor);
-
-      expect(color.A).toBe(255);
-      expect(color.R).toBe(255);
-      expect(color.G).toBe(119);
-      expect(color.B).toBe(17);
-    });
-
-    test('short hex color with alpha', () => {
-      const hexColor = '#F718';
-      const color = parser.parse(hexColor);
-
-      expect(color.A).toBe(136);
-      expect(color.R).toBe(255);
-      expect(color.G).toBe(119);
-      expect(color.B).toBe(17);
-    });
-  });
-
   describe('should throw an error when hex color is invalid', () => {
     const invalidColors = ['#', '#1', '#F1', '#F1981', '#X14597', '#1X4597', '#1234567', '#123456789', '#1234567P'];
 

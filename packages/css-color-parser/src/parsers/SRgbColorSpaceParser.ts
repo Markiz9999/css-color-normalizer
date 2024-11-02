@@ -10,11 +10,11 @@ export abstract class SRgbSpaceColorParser implements IColorParser {
     this.unitParser = new CssUnitParser();
   }
 
-  public isColorSupported(cssColor: string): boolean {
+  public parse(cssColor: string): IColor {
     cssColor = cssColor.toLowerCase();
 
     if (!((cssColor.startsWith(`${this.functionName}(`) || cssColor.startsWith(`${this.functionName}a(`)) && cssColor.endsWith(')'))) {
-      return false;
+      throw new Error('Invalid css color');
     }
 
     // rgba(123, 45, 67 / 0.5) is not supported by specification but we will!
@@ -22,15 +22,9 @@ export abstract class SRgbSpaceColorParser implements IColorParser {
 
     // const isCommasSeparated = cssColor.includes(',');
     // const isAlphaSlashSeparated = cssColor.includes('/');
-
-    // return (isCommasSeparated && !isAlphaSlashSeparated) || (!isCommasSeparated && isAlphaSlashSeparated);
-    return true;
-  }
-
-  public parse(cssColor: string): IColor {
-    if (!this.isColorSupported(cssColor)) {
-      throw new Error('Invalid css color');
-    }
+    // if (isCommasSeparated && isAlphaSlashSeparated) {
+    //   throw new Error('Invalid css color');
+    // }
 
     const funcBodyStartsAt = cssColor.indexOf('(');
     const funcBodyEndsAt = cssColor.lastIndexOf(')');
@@ -71,7 +65,7 @@ export abstract class SRgbSpaceColorParser implements IColorParser {
     const { R, G, B } = this.convertToRgb(args);
     A = alpha != null ? this.parseAlphaChannelValue(alpha) : A;
 
-    return new Color(A ?? 255, R, G, B);
+    return new Color(A ?? 1, R, G, B);
   }
 
   protected abstract convertToRgb(args: string[]): { R: number; G: number; B: number };
@@ -85,11 +79,11 @@ export abstract class SRgbSpaceColorParser implements IColorParser {
 
     if (value.endsWith('%')) {
       const cssValue = this.unitParser.parsePercentage(value);
-      valueNumber = (cssValue.value / 100) * 255;
+      valueNumber = cssValue.value / 100;
     } else {
-      valueNumber = this.unitParser.parseDecimal(value) * 255;
+      valueNumber = this.unitParser.parseDecimal(value);
     }
 
-    return Math.ceil(Math.max(0, Math.min(255, valueNumber)));
+    return Math.max(0, Math.min(1, valueNumber));
   }
 }

@@ -3,7 +3,18 @@ import { CssUnitParser } from '../CssUnitParser';
 import { IColor } from '../interfaces/IColor';
 import { IColorParser } from '../interfaces/IColorParser';
 import { ColorConversionUtils } from '../utils/ColorConversionUtils';
-import { round } from '../utils/NumberUtils';
+
+enum ColorSpace {
+  Srgb = 'srgb',
+  SrgbLinear = 'srgb-linear',
+  DisplayP3 = 'display-p3',
+  A98Rgb = 'a98-rgb',
+  ProPhotoRgb = 'prophoto-rgb',
+  Rec2020 = 'rec2020',
+  Xyz = 'xyz',
+  XyzD50 = 'xyz-d50',
+  XyzD65 = 'xyz-d65',
+}
 
 export class ColorFuncColorParser implements IColorParser {
   protected unitParser: CssUnitParser;
@@ -14,52 +25,21 @@ export class ColorFuncColorParser implements IColorParser {
     this.colorConversionUtils = new ColorConversionUtils();
   }
 
-  public isColorSupported(cssColor: string): boolean {
+  public parse(cssColor: string): IColor {
     cssColor = cssColor.toLowerCase();
 
     if (!(cssColor.startsWith('color(') && cssColor.endsWith(')'))) {
-      return false;
-    }
-
-    try {
-      const [colorSpace] = this.getArgs(cssColor);
-      if (
-        ['srgb', 'srgb-linear', 'display-p3', 'a98-rgb', 'prophoto-rgb', 'rec2020', 'xyz', 'xyz-d50', 'xyz-d65'].includes(colorSpace) ===
-        false
-      ) {
-        return false;
-      }
-
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  public parse(cssColor: string): IColor {
-    if (!this.isColorSupported(cssColor)) {
       throw new Error('Invalid css color');
     }
 
-    const [colorSpace, c1, c2, c3, alpha] = this.getArgs(cssColor);
+    const { colorSpace, c1, c2, c3, alpha } = this.getArgs(cssColor);
 
-    const { R, G, B } = this.convertToRgb(colorSpace, [c1, c2, c3]);
-    const A = alpha != null ? this.parseAlphaChannelValue(alpha) : undefined;
+    const { R, G, B } = this.convertToRgb(colorSpace, c1, c2, c3);
 
-    return new Color(A ?? 255, R, G, B);
+    return new Color(alpha ?? 255, R, G, B);
   }
 
-  protected convertToRgb(colorSpace: string, args: string[]): { R: number; G: number; B: number } {
-    if (args.length !== 3) {
-      throw new Error('Invalid number of arguments');
-    }
-
-    colorSpace = colorSpace.toLowerCase();
-
-    const c1 = this.parseComponentValue(args[0]);
-    const c2 = this.parseComponentValue(args[1]);
-    const c3 = this.parseComponentValue(args[2]);
-
+  protected convertToRgb(colorSpace: string, c1: number, c2: number, c3: number): { R: number; G: number; B: number } {
     let color: { R: number; G: number; B: number };
 
     if (colorSpace === 'srgb') {
@@ -83,9 +63,9 @@ export class ColorFuncColorParser implements IColorParser {
     }
 
     return {
-      R: Math.round(round(Math.max(0, Math.min(1, color.R)), 4) * 255),
-      G: Math.round(round(Math.max(0, Math.min(1, color.G)), 4) * 255),
-      B: Math.round(round(Math.max(0, Math.min(1, color.B)), 4) * 255),
+      R: Math.max(0, Math.min(1, color.R)),
+      G: Math.max(0, Math.min(1, color.G)),
+      B: Math.max(0, Math.min(1, color.B)),
     };
   }
 
@@ -103,7 +83,7 @@ export class ColorFuncColorParser implements IColorParser {
   }
 
   protected fromD50Xyz(d50X: number, d50Y: number, d50Z: number): { R: number; G: number; B: number } {
-    const { X, Y, Z } = this.colorConversionUtils.D50XyzToD65Xyz(d50X, d50Y, d50Z);
+    const { X, Y, Z } = this.colorConversionUtils.d50XyzToD65Xyz(d50X, d50Y, d50Z);
     const { R: lR, G: lG, B: lB } = this.colorConversionUtils.xyzToLinearRgb(X, Y, Z);
     return this.fromLinearRgb(lR, lG, lB);
   }
@@ -126,10 +106,39 @@ export class ColorFuncColorParser implements IColorParser {
     return this.fromD50Xyz(d50X, d50Y, d50Z);
   }
 
-  protected fromRec2020(a98R: number, a98G: number, a98B: number): { R: number; G: number; B: number } {
-    const { R: lA98R, G: lA98G, B: lA98B } = this.colorConversionUtils.rec2020ToLinearRec2020(a98R, a98G, a98B);
-    const { X, Y, Z } = this.colorConversionUtils.linearRec2020ToXyz(lA98R, lA98G, lA98B);
+  protected fromRec2020(r2020R: number, r2020G: number, r2020B: number): { R: number; G: number; B: number } {
+    const { R: lR2020R, G: lR2020G, B: lr2020B } = this.colorConversionUtils.rec2020ToLinearRec2020(r2020R, r2020G, r2020B);
+    const { X, Y, Z } = this.colorConversionUtils.linearRec2020ToXyz(lR2020R, lR2020G, lr2020B);
     return this.fromXyz(X, Y, Z);
+  }
+
+  protected getArgs(cssColor: string): { colorSpace: ColorSpace; c1: number; c2: number; c3: number; alpha?: number } {
+    const funcBodyStartsAt = cssColor.indexOf('(');
+    const funcBodyEndsAt = cssColor.lastIndexOf(')');
+    const funcBody = cssColor.slice(funcBodyStartsAt + 1, funcBodyEndsAt);
+
+    const [color, alphaArg] = funcBody
+      .replace(/\s{2,}/, ' ')
+      .split('/')
+      .map((value) => value.trim());
+    const args = color.split(' ');
+    if (args.length !== 4) {
+      throw new Error('Invalid number of color function arguments');
+    }
+
+    const [colorSpace, c1Arg, c2Arg, c3Arg] = args;
+
+    if (!this.isColorSpace(colorSpace)) {
+      throw new Error('Invalid color space');
+    }
+
+    const c1 = this.parseComponentValue(c1Arg);
+    const c2 = this.parseComponentValue(c2Arg);
+    const c3 = this.parseComponentValue(c3Arg);
+
+    const alpha = alphaArg != null ? this.parseAlphaChannelValue(alphaArg) : undefined;
+
+    return { colorSpace, c1, c2, c3, alpha };
   }
 
   protected parseComponentValue(value: string): number {
@@ -158,28 +167,15 @@ export class ColorFuncColorParser implements IColorParser {
 
     if (value.endsWith('%')) {
       const cssValue = this.unitParser.parsePercentage(value);
-      valueNumber = (cssValue.value / 100) * 255;
+      valueNumber = cssValue.value / 100;
     } else {
-      valueNumber = this.unitParser.parseDecimal(value) * 255;
+      valueNumber = this.unitParser.parseDecimal(value);
     }
 
-    return Math.ceil(Math.max(0, Math.min(255, valueNumber)));
+    return Math.max(0, Math.min(1, valueNumber));
   }
 
-  protected getArgs(cssColor: string): string[] {
-    const funcBodyStartsAt = cssColor.indexOf('(');
-    const funcBodyEndsAt = cssColor.lastIndexOf(')');
-    const funcBody = cssColor.slice(funcBodyStartsAt + 1, funcBodyEndsAt);
-
-    const [color, alpha] = funcBody
-      .replace(/\s{2,}/, ' ')
-      .split('/')
-      .map((value) => value.trim());
-    const args = color.split(' ');
-    if (args.length !== 4) {
-      throw new Error('Invalid number of color function arguments');
-    }
-
-    return [...args, alpha];
+  protected isColorSpace(colorSpace: string): colorSpace is ColorSpace {
+    return Object.values<string>(ColorSpace).includes(colorSpace);
   }
 }

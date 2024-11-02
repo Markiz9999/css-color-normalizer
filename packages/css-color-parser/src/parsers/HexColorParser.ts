@@ -3,28 +3,20 @@ import { IColor } from '../interfaces/IColor';
 import { IColorParser } from '../interfaces/IColorParser';
 
 export class HexColorParser implements IColorParser {
-  public isColorSupported(cssColor: string): boolean {
+  public parse(cssColor: string): IColor {
     if (cssColor[0] !== '#') {
-      return false;
+      throw new Error('Invalid css color');
     }
 
     if ([4, 5, 7, 9].includes(cssColor.length) === false) {
-      return false;
+      throw new Error('Invalid css color');
     }
 
     for (let i = 1; i < cssColor.length; i++) {
       const charCode = cssColor.charCodeAt(i);
       if (!((charCode >= 48 && charCode <= 57) || (charCode >= 65 && charCode <= 70) || (charCode >= 97 && charCode <= 102))) {
-        return false;
+        throw new Error('Invalid css color');
       }
-    }
-
-    return true;
-  }
-
-  public parse(cssColor: string): IColor {
-    if (!this.isColorSupported(cssColor)) {
-      throw new Error('Invalid css color');
     }
 
     const hexPart = cssColor.slice(1);
@@ -73,6 +65,6 @@ export class HexColorParser implements IColorParser {
       A = A.repeat(2);
     }
 
-    return new Color(parseInt(A, 16), parseInt(R, 16), parseInt(G, 16), parseInt(B, 16));
+    return new Color(parseInt(A, 16) / 255, parseInt(R, 16) / 255, parseInt(G, 16) / 255, parseInt(B, 16) / 255);
   }
 }

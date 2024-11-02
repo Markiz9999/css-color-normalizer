@@ -20,11 +20,11 @@ export class RgbColorParser extends SRgbSpaceColorParser {
 
     if (value.endsWith('%')) {
       const cssValue = this.unitParser.parsePercentage(value);
-      valueNumber = (cssValue.value / 100) * 255;
+      valueNumber = cssValue.value / 100;
     } else {
-      valueNumber = this.unitParser.parseDecimal(value);
+      valueNumber = this.unitParser.parseDecimal(value) / 255;
     }
 
-    return Math.ceil(Math.max(0, Math.min(255, valueNumber)));
+    return Math.max(0, Math.min(1, valueNumber));
   }
 }
