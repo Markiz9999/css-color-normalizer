@@ -87,7 +87,7 @@ export class OklabColorParser implements IColorParser {
 
     if (value.endsWith('%')) {
       const cssValue = this.unitParser.parsePercentage(value);
-      valueNumber = (cssValue.value / 100) * 0.8 - 0.4;
+      valueNumber = (cssValue.value / 100) * 0.4;
     } else {
       valueNumber = this.unitParser.parseDecimal(value);
     }

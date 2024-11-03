@@ -23,7 +23,7 @@ describe('CSS Color Parser', () => {
     });
 
     test('for Oklab color with percentage alpha', () => {
-      const oklabColor = 'oklab(0.3 0.7 -0.4 / 60%)';
+      const oklabColor = 'oklab(0.3 0.7 -100% / 60%)';
       const color = parser.parse(oklabColor);
 
       expect(color.toHexNumberString()).toBe('0x99C000DD');
