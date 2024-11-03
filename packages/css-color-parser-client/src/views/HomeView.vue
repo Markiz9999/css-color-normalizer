@@ -50,22 +50,22 @@ watch(color, () => {
     return;
   }
 
-  const rDecreaseCount = Math.round(Math.random() * 40 + 40);
-  const gDecreaseCount = Math.round(Math.random() * 40 + 40);
-  const bDecreaseCount = Math.round(Math.random() * 40 + 40);
-  const rIncreaseCount = Math.round(Math.random() * 40 + 40);
-  const gIncreaseCount = Math.round(Math.random() * 40 + 40);
-  const bIncreaseCount = Math.round(Math.random() * 40 + 40);
+  const rDecreaseCount = Math.random() * 0.15 + 0.15;
+  const gDecreaseCount = Math.random() * 0.15 + 0.15;
+  const bDecreaseCount = Math.random() * 0.15 + 0.15;
+  const rIncreaseCount = Math.random() * 0.15 + 0.15;
+  const gIncreaseCount = Math.random() * 0.15 + 0.15;
+  const bIncreaseCount = Math.random() * 0.15 + 0.15;
 
   const middleColor = new Color(
-    255,
-    Math.max(rDecreaseCount, Math.min(255 - rIncreaseCount, color.value.R)),
-    Math.max(gDecreaseCount, Math.min(255 - gIncreaseCount, color.value.G)),
-    Math.max(bDecreaseCount, Math.min(255 - bIncreaseCount, color.value.B)),
+    1,
+    Math.max(rDecreaseCount, Math.min(1 - rIncreaseCount, color.value.R)),
+    Math.max(gDecreaseCount, Math.min(1 - gIncreaseCount, color.value.G)),
+    Math.max(bDecreaseCount, Math.min(1 - bIncreaseCount, color.value.B)),
   );
 
   gradientFromColorHex.value = new Color(
-    255,
+    1,
     middleColor.R - rDecreaseCount,
     middleColor.G - gDecreaseCount,
     middleColor.B - bDecreaseCount,
@@ -74,7 +74,7 @@ watch(color, () => {
   gradientMiddleColorHex.value = middleColor.toHexColorString();
 
   gradientToColorHex.value = new Color(
-    255,
+    1,
     middleColor.R + rIncreaseCount,
     middleColor.G + gIncreaseCount,
     middleColor.B + bIncreaseCount,
