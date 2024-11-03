@@ -257,6 +257,38 @@ export class ColorConversionUtils {
     return { R, G, B };
   }
 
+  public oklabToXyz(L: number, a: number, b: number): { X: number; Y: number; Z: number } {
+    if (L < 0.000001) {
+      L = 0;
+      a = 0;
+      b = 0;
+    }
+
+    if (L > 0.999999) {
+      L = 1;
+      a = 0;
+      b = 0;
+    }
+
+    // Given OKLab, convert to XYZ relative to D65
+    const M1_1 = [
+      [1.2268798758459243, -0.5578149944602171, 0.2813910456659647],
+      [-0.0405757452148008, 1.112286803280317, -0.0717110580655164],
+      [-0.0763729366746601, -0.4214933324022432, 1.5869240198367816],
+    ];
+    const M2_1 = [
+      [1.0, 0.3963377773761749, 0.2158037573099136],
+      [1.0, -0.1055613458156586, -0.0638541728258133],
+      [1.0, -0.0894841775298119, -1.2914855480194092],
+    ];
+
+    const [[l], [m], [s]] = multiply(M2_1, [[L], [a], [b]]);
+    const [l1, m1, s1] = [Math.pow(l, 3), Math.pow(m, 3), Math.pow(s, 3)];
+    const [[X], [Y], [Z]] = multiply(M1_1, [[l1], [m1], [s1]]);
+
+    return { X, Y, Z };
+  }
+
   public linearRgbToOklab(R: number, G: number, B: number): { L: number; a: number; b: number } {
     const M2 = [
       [0.2104542553, 0.793617785, -0.0040720468],
@@ -317,25 +349,6 @@ export class ColorConversionUtils {
     ];
 
     const [[X], [Y], [Z]] = multiply(M, [[R], [G], [B]]);
-
-    return { X, Y, Z };
-  }
-
-  public oklabToXyz(L: number, a: number, b: number): { X: number; Y: number; Z: number } {
-    // Given OKLab, convert to XYZ relative to D65
-    const LMStoXYZ = [
-      [1.2268798758459243, -0.5578149944602171, 0.2813910456659647],
-      [-0.0405757452148008, 1.112286803280317, -0.0717110580655164],
-      [-0.0763729366746601, -0.4214933324022432, 1.5869240198367816],
-    ];
-    const OKLabtoLMS = [
-      [1.0, 0.3963377773761749, 0.2158037573099136],
-      [1.0, -0.1055613458156586, -0.0638541728258133],
-      [1.0, -0.0894841775298119, -1.2914855480194092],
-    ];
-
-    const [[l], [m], [s]] = multiply(OKLabtoLMS, [[L], [a], [b]]);
-    const [[X], [Y], [Z]] = multiply(LMStoXYZ, [[Math.pow(l, 3)], [Math.pow(m, 3)], [Math.pow(s, 3)]]);
 
     return { X, Y, Z };
   }
