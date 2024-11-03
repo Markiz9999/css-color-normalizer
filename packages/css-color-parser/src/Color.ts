@@ -54,7 +54,7 @@ export class Color implements IColor {
   }
 
   public toRgbColorString(): string {
-    return `rgb(${this.R} ${this.G} ${this.B} / ${this.A})`;
+    return `rgb(${this.to255Range(this.R)} ${this.to255Range(this.G)} ${this.to255Range(this.B)} / ${round(this.A, 5)})`;
   }
 
   public toNumber(): number {
